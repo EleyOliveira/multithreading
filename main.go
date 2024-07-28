@@ -10,8 +10,11 @@ import (
 func main() {
 	cepBusca := "06182030"
 
-	time.Sleep(10 * time.Second)
-	func() {
+	canal := make(chan string)
+
+	//time.Sleep(5 * time.Second)
+	go func() {
+		time.Sleep(3 * time.Second)
 		req, err := http.Get("http://viacep.com.br/ws/" + cepBusca + "/json/")
 		if err != nil {
 			panic(err)
@@ -21,10 +24,11 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		log.Println(string(res))
+		canal <- string(res)
 	}()
 
-	func() {
+	go func() {
+		time.Sleep(2 * time.Second)
 		req, err := http.Get("https://brasilapi.com.br/api/cep/v1/" + cepBusca)
 		if err != nil {
 			panic(err)
@@ -34,6 +38,14 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		log.Println(string(res))
+		canal <- string(res)
 	}()
+
+	select {
+	case resposta := <-canal:
+		log.Println(resposta)
+	case <-time.After(1 * time.Second):
+		log.Println("timeout")
+	}
+
 }
